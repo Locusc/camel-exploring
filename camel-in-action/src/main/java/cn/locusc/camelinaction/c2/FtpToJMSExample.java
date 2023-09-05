@@ -4,6 +4,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jms.JmsComponent;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.spi.Registry;
 
 import javax.jms.ConnectionFactory;
 
@@ -16,10 +17,14 @@ public class FtpToJMSExample {
 
         context.addComponent("jms", JmsComponent.jmsComponentAutoAcknowledge(connectionFactory));
 
+        Registry registry = context.getRegistry();
+        registry.bind("myFilter", new OrderFileFilter<>());
+
+        // 使用#引用注册表对象实例
         context.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from("ftp://rider.com/orders?username=rider&password=secret")
+                from("ftp://rider.com/orders?username=rider&password=secret&filter=#myFilter")
                         .process(exchange -> {
                             System.out.println("We just downloaded: " + exchange.getIn().getHeader("CamelFileName"));
                         })
